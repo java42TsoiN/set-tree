@@ -36,6 +36,7 @@ public TreeSet() {
  }
  private class TreeSetIterator implements Iterator<T> {
 Node<T> current = root == null ? root : getMostLeftFrom(root);
+Node<T> previous = null;
 	@Override
 	public boolean hasNext() {
 		
@@ -45,9 +46,17 @@ Node<T> current = root == null ? root : getMostLeftFrom(root);
 	@Override
 	public T next() {
 		T res = current.obj;
+		previous = current;
 		current = current.right != null ? getMostLeftFrom(current.right) :
 			getFirstParentGreater(current);
 		return res;
+	}
+	@Override 
+	public void remove() {
+		if (isJunction(previous)) {
+			current = previous;
+		}
+		removeNode(previous);
 	}
 	 
  }
@@ -95,12 +104,62 @@ Node<T> current = root == null ? root : getMostLeftFrom(root);
 	}
 	@Override
 	public T remove(T pattern) {
-		// TODO next HW
-		return null;
+		Node<T> removedNode = getNode(pattern);
+		if (removedNode == null) {
+			return null;
+		}
+		removeNode(removedNode);
+		return removedNode.obj;
 	}
 
 	
 
+	private void removeNode(Node<T> removedNode) {
+		if (isJunction(removedNode)) {
+			removeJunction(removedNode);
+		} else if (removedNode == root) {
+			removeRoot();
+		} else {
+			removeNonJunction(removedNode);
+		}
+		size--;
+	}
+	private void removeNonJunction(Node<T> removedNode) {
+		Node<T> child = removedNode.right == null ? removedNode.left : removedNode.right;
+		Node<T> parent = removedNode.parent;
+		if (parent.right == removedNode) {
+			parent.right = child;
+		} else {
+			parent.left = child;
+		}
+		if (child != null) {
+			child.parent = parent;
+		}
+		
+	}
+	private void removeJunction(Node<T> removedNode) {
+		Node<T> substitute = getMostLeftFrom(removedNode.right);
+		removedNode.obj = substitute.obj;
+		removeNonJunction(substitute);
+		
+	}
+	private boolean isJunction(Node<T> node) {
+		
+		return node.left != null && node.right != null;
+	}
+	private void removeRoot() {
+		root = root.right == null ? root.left : root.right;
+		if (root != null) {
+			root.parent = null;
+		}
+	}
+	private Node<T> getNode(T pattern) {
+		Node<T> current = root;
+		while(current != null && !current.obj.equals(pattern)) {
+			current = comp.compare(pattern, current.obj) > 0 ? current.right : current.left;
+		}
+		return current;
+	}
 	@Override
 	public Iterator<T> iterator() {
 		
